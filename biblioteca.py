@@ -21,6 +21,9 @@ class Mensagem:
             print("\n{}: {}".format(self.origem, self.conteudo))
             # stdout.writelines("\r{}: {}\n".format(self.origem, self.conteudo))
     
+    def __repr__(self):
+        return "{:>10}->{:<10}: {:<}".format(str(self.origem), str(self.destino), str(self.conteudo))
+
     def encode(self, tipo = MENSAGEM):
         return str.encode("{}(#*#){}(#*#){}(#*#){}".format(self.tipo, self.origem, self.destino, self.conteudo))
         
