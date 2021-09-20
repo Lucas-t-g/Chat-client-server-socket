@@ -1,9 +1,10 @@
 import pygame
 
 
-ColorSet = {"green":[109, 241, 109], "blue":[0, 132, 252], "red":[137, 28, 36], "white":[255, 255, 255], "black": [0, 0, 0]}
+ColorSet = {"green":[109, 241, 109], "blue":[0, 132, 252], "red":[137, 28, 36], "white":[255, 255, 255], "silver":[100, 100, 100], "black": [0, 0, 0]}
 pygame.init()
 FONT_ASSIST = pygame.font.Font('freesansbold.ttf', 32)
+FONT_ASSIST_2 = pygame.font.Font('freesansbold.ttf', 26)
 
 
 class Button(pygame.sprite.Sprite):

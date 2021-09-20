@@ -22,33 +22,25 @@ def escuta_servidor(servidor):
             msg.show()
             storeMessage(msg, type="received")
 
-def ex(s):
-    while True:
-        nome_destino = str(input("para quem é a mensagem:\n"))
-        msg = str(input("digite sua mensagem:\n"))
-        msg = Mensagem(nome_origem, nome_destino, msg)
-
-        storeMessage(msg, type="send")
-        s.sendall(msg.encode())
-        sleep(0.5)
-
 def storeMessage(msg, type):
     global ContactList, ChatBlockList, buttonGroups
     if type == "received":
-        if msg.origem in ContactList:
+        if msg.destino == "Todos":
+            ContactList["Todos"].append(msg)
+        elif msg.origem in ContactList:
             ContactList[msg.origem].append(msg)
         else:
             ContactList[msg.origem] = [msg]
-            ChatBlockList[msg.origem] = Button(buttonGroups, x=194/2, y=58/2+58*len(ChatBlockList), ctt=msg.origem[:9])
+            ChatBlockList[msg.origem] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList), ctt=msg.origem[:9])
     elif type == "send":
         if msg.destino in ContactList:
             ContactList[msg.destino].append(msg)
         else:
             ContactList[msg.destino] = [msg]
-            ChatBlockList[msg.destino] = Button(buttonGroups, x=194/2, y=58/2+58*len(ChatBlockList), ctt=msg.destino[:9])
+            ChatBlockList[msg.destino] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList), ctt=msg.destino[:9])
 
 def login(win):
-    win.fill(ColorSet["green"])
+    win.fill(ColorSet["white"])
     x = 540
     y = 360
     w = 140
@@ -69,27 +61,44 @@ def login(win):
                 done = True
         login_input_box.update()
 
-        win.fill(ColorSet["green"])
+        win.fill(ColorSet["white"])
         win.blit(text, textrect)
         login_input_box.draw(win)
 
         pygame.display.update()
     
     win.fill(ColorSet["white"])
-    # print("nome: ", login_input_box.text)
-    return login_input_box.text
+    # print("nome: ", login_input_box.input)
+    return login_input_box.input
 
-# def CreateChatBlock(win):
-#     global ContactList
+def CreateChatBlock(win, contact):
+    global ContactList
+    left = 200
+    right = 1080
+    n_messages = 0
 
+    texts = []
+    textsRect = []
+    for msg in ContactList[contact][::-1]:
 
-# print('''
-# ->  para enviar mensagens para um grupo de outros clientes informe seus nomes separados por ';'(ponto e virgula)
-#         -exemplo: lucas;murilo;gabriel
-# ->  para criar um grupo de clientes especifique o nome do grupo seguido por um '>' (maior que) e o nome dos membros separados por ';'(ponto e virgula). Obs.:após criado basta utilizar o nome do grupo como destinatario
-#         -exemplo: grupo1>lucas;murilo;gabriel
-# ->  para enviar mensagem para todos os clientes coloque apenas: '/all'
-# ''')
+        if msg.origem == nome_origem:
+            content = "{}: {}".format("Você", msg.conteudo)
+            x = 1078
+            adjus = -2
+        else:
+            content = "{}: {}".format(msg.origem, msg.conteudo)
+            x = 202
+            adjus = 2
+
+        text = FONT_ASSIST_2.render(content, True, ColorSet["black"])
+        textRect = text.get_rect()
+        textRect.center = (int(x+text.get_width()/adjus), int(660 - 45*n_messages))
+
+        texts.append(text)
+        textsRect.append(textRect)
+        n_messages += 1
+    
+    return texts, textsRect
 
 HOST = 'localhost'
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 50000
@@ -97,26 +106,29 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 50000
 pygame.init()
 fps = pygame.time.Clock()
 win = CreateWindow(nameWindow="Chat")
-pygame.draw.rect(win, ColorSet["blue"], (0, 0, 196, 720))
-pygame.draw.rect(win, ColorSet["black"], (196, 0, 4, 720))
 
 buttonGroups = pygame.sprite.Group()
-ContactList = {}
-ChatBlockList = {}
+ContactList = {"Todos" : []}
+ChatBlockList = {"Todos" : Button(buttonGroups, x=194/2, y=32+58/2, ctt="Todos")}
+CurrentChat = "Todos"
+texts = []
+textsRect = []
 
-# nome_origem = str(input("qual seu nome: "))
 nome_origem = login(win)
+pygame.display.set_caption("Chat - {}".format(nome_origem))
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 msg = Mensagem(origem=nome_origem, apresentacao=True)
 s.sendall(msg.encode(tipo=APRESENTACAO))
 sleep(0.5)
 
-th_escutando_servidor = Thread(target=escuta_servidor, args=(s,))
+th_escutando_servidor = Thread(target=escuta_servidor, args=(s,), daemon=True)
 th_escutando_servidor.start()
 
-th_ex = Thread(target=ex, args=(s,))
-th_ex.start()
+win.fill(ColorSet["white"])
+input_message = InputBox(200, 720-32, 1080-200, 32, default_text="Digite uma Mensagem")
+input_destino = InputBox(0, 0, 180, 32, default_text="Digite um contato", color_active=ColorSet["white"], color_inactive=ColorSet["silver"])
+nome_destino = "Todos"
 
 MainLoop = True
 while th_escutando_servidor.is_alive() and MainLoop:
@@ -127,19 +139,46 @@ while th_escutando_servidor.is_alive() and MainLoop:
             MainLoop = False
             break
 
-        buttonGroups.update()
-        buttonGroups.draw(win)
-        pygame.display.update()
+        if input_message.handle_event(event) == True and nome_destino != None and type(nome_destino) == str:
+            
+            msg = Mensagem(nome_origem, nome_destino, input_message.input)
+            storeMessage(msg, type="send")
+            s.sendall(msg.encode())
+            # sleep(0.5)
 
-    # print("fffffffff")
-    # print(ContactList.keys())
-    # print("fffffffff")
-    if len(ContactList) > 0:
-        for contact in ContactList.keys():
-            # print(contact)
-            button = ChatBlockList[contact]
-            win.blit(button.text, button.textRect)
+        if input_destino.handle_event(event):
+            nome_destino = input_destino.input
+
+    for contact in ContactList.keys():
+        button = ChatBlockList[contact]
+        if button.touch:
+            nome_destino = contact
+            CurrentChat = contact
+    if CurrentChat in ContactList.keys():
+        texts, textsRect = CreateChatBlock(win, CurrentChat)
+
+# updates na janela
+    win.fill(ColorSet["white"])
+    pygame.draw.rect(win, ColorSet["blue"], (0, 0, 196, 720))
+    pygame.draw.rect(win, ColorSet["black"], (196, 0, 4, 720))
+
+    buttonGroups.update()
+    buttonGroups.draw(win)
+
+    for contact in ContactList.keys():
+        button = ChatBlockList[contact]
+        win.blit(button.text, button.textRect)
+
+    for text, textRect in zip(texts, textsRect):
+        win.blit(text, textRect)
+
+    input_message.update()
+    input_message.draw(win)
+
+    input_destino.update()
+    input_destino.draw(win)
 
     pygame.display.update()
 
 pygame.quit()
+sys.exit()

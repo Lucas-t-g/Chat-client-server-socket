@@ -10,13 +10,17 @@ FONT = pg.font.Font(None, 32)
 
 class InputBox:
 
-    def __init__(self, x, y, w, h, default_text=''):
+    def __init__(self, x, y, w, h, default_text='', color_active=None, color_inactive=None):
         self.rect = pg.Rect(x, y, w, h)
-        self.color = COLOR_INACTIVE
+        self.color_active = color_active if color_active != None else COLOR_ACTIVE
+        self.color_inactive = color_inactive if color_inactive != None else COLOR_INACTIVE
+
+        self.color = self.color_inactive
         self.text = default_text
-        self.txt_surface = FONT.render(default_text, True, self.color)
+        self.txt_surface = FONT.render(self.text, True, self.color)
         self.active = False
         self.default_text = default_text # modificado
+        self.input = ""
 
     def handle_event(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -29,14 +33,16 @@ class InputBox:
             else:
                 self.active = False
                 # self.text = self.default_text # modificado
-                
+
             # Change the current color of the input box.
-            self.color = COLOR_ACTIVE if self.active else COLOR_INACTIVE
+            self.color = self.color_active if self.active else self.color_inactive
         if event.type == pg.KEYDOWN:
             if self.active:
                 if event.key == pg.K_RETURN:
                     # print(self.text)
-                    # self.text = ''
+                    self.input = self.text
+                    self.text = self.default_text
+                    self.txt_surface = FONT.render(self.text, True, self.color)
                     return True
                 elif event.key == pg.K_BACKSPACE:
                     self.text = self.text[:-1]

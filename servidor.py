@@ -30,7 +30,7 @@ def checa_cliente(i):
         msg.decode(data)
         if msg.tipo == MENSAGEM:
             msg.show(detalhes=True)
-            if msg.destino == '/all':
+            if msg.destino == '/all' or msg.destino == 'Todos':
                 for destino in clientes:
                     if destino.nome != msg.origem:
                         destino.conexao.sendall(msg.encode())
