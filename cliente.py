@@ -6,6 +6,7 @@ from biblioteca import Mensagem, APRESENTACAO, MENSAGEM
 from pygame_assist import *
 from InputBox import *
 
+# Esta função é utilizada para criar a thread que vai ficar verificando se o servidor enviou alguma mensagem.
 def escuta_servidor(servidor):
     global ContactList
     while True:
@@ -22,23 +23,28 @@ def escuta_servidor(servidor):
             msg.show()
             storeMessage(msg, type="received")
 
+# Esta função armazena as mensagens recebidas e enviadas, separando por conversas, é utilizado para criar avisualação dos chats.
 def storeMessage(msg, type):
     global ContactList, ChatBlockList, buttonGroups
-    if type == "received":
+    if type == "received":                  # para salvar as mensagens recebidas.
         if msg.destino == "Todos":
             ContactList["Todos"].append(msg)
         elif msg.origem in ContactList:
             ContactList[msg.origem].append(msg)
         else:
             ContactList[msg.origem] = [msg]
-            ChatBlockList[msg.origem] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList), ctt=msg.origem[:9])
-    elif type == "send":
+            ChatBlockList[msg.origem] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList),      # cria o botção que abre o chat
+                                                               ctt=msg.origem[:9])                          #  de determinada conversa.
+        
+    elif type == "send":                    # para salvar as mensagens enviadas.
         if msg.destino in ContactList:
             ContactList[msg.destino].append(msg)
         else:
             ContactList[msg.destino] = [msg]
-            ChatBlockList[msg.destino] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList), ctt=msg.destino[:9])
+            ChatBlockList[msg.destino] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList),     # cria o botção que abre o chat
+                                                              ctt=msg.destino[:9])                          #  de determinada conversa.
 
+# Essa função executa a tela de 'login'.
 def login(win):
     win.fill(ColorSet["white"])
     x = 540
@@ -71,6 +77,8 @@ def login(win):
     # print("nome: ", login_input_box.input)
     return login_input_box.input
 
+# Esta função lista todas as mensagens trocadas entre dois contatos, ou no chat de Todos, e cria um objeto na superficie 
+# pygame para ser mostrada a mensagem na tela, e então retorna os objetos da superficie para serem desenhados na janela no loop principal.
 def CreateChatBlock(win, contact):
     global ContactList
     left = 200
@@ -79,13 +87,13 @@ def CreateChatBlock(win, contact):
 
     texts = []
     textsRect = []
-    for msg in ContactList[contact][::-1]:
+    for msg in ContactList[contact][::-1]:      # percorre a lista de mensagens com determinado contato de trás pra frente.
 
-        if msg.origem == nome_origem:
+        if msg.origem == nome_origem:           # verifica se a mensagem foi enviada pelo usuário.
             content = "{}: {}".format("Você", msg.conteudo)
             x = 1078
             adjus = -2
-        else:
+        else:                                   # caso a mensagem tenha sido enviada por outo usuário.
             content = "{}: {}".format(msg.origem, msg.conteudo)
             x = 202
             adjus = 2
@@ -108,22 +116,24 @@ fps = pygame.time.Clock()
 win = CreateWindow(nameWindow="Chat")
 
 buttonGroups = pygame.sprite.Group()
-ContactList = {"Todos" : []}
-ChatBlockList = {"Todos" : Button(buttonGroups, x=194/2, y=32+58/2, ctt="Todos")}
-CurrentChat = "Todos"
+ContactList = {"Todos" : []}     # uma lista para armazenar todos os contatos do usuário.
+ChatBlockList = {"Todos" : Button(buttonGroups, x=194/2, y=32+58/2, ctt="Todos")} # uma lista para armazenar os botões 
+                                                                                    # de chat para cada contato do usuário.
+CurrentChat = "Todos"            # define qual chat está aberto atualmente.
 texts = []
 textsRect = []
 
-nome_origem = login(win)
-pygame.display.set_caption("Chat - {}".format(nome_origem))
+nome_origem = login(win)    # chama a função que apresenta a tela de login.
+pygame.display.set_caption("Chat - {}".format(nome_origem))     # renomeia a janela com o nome do usuário.
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 msg = Mensagem(origem=nome_origem, apresentacao=True)
-s.sendall(msg.encode(tipo=APRESENTACAO))
+s.sendall(msg.encode(tipo=APRESENTACAO))    # após se conectar com o servidor, envia a mensagem de apresentação 
+                                            # informando o nome do usuário.
 sleep(0.5)
 
-th_escutando_servidor = Thread(target=escuta_servidor, args=(s,), daemon=True)
-th_escutando_servidor.start()
+th_escutando_servidor = Thread(target=escuta_servidor, args=(s,), daemon=True)  # cria a thread que vai ficar chegando
+th_escutando_servidor.start()                                                   # se há novas mensagens do servidor.
 
 win.fill(ColorSet["white"])
 input_message = InputBox(200, 720-32, 1080-200, 32, default_text="Digite uma Mensagem")
@@ -139,25 +149,29 @@ while th_escutando_servidor.is_alive() and MainLoop:
             MainLoop = False
             break
 
-        if input_message.handle_event(event) == True and nome_destino != None and type(nome_destino) == str:
-            
-            msg = Mensagem(nome_origem, nome_destino, input_message.input)
+        if input_message.handle_event(event):    # checa se ouve um evento de 
+            msg = Mensagem(nome_origem, nome_destino, input_message.input)          # entrada na InputBox de mensagem.
             storeMessage(msg, type="send")
-            s.sendall(msg.encode())
+            s.sendall(msg.encode())                                           # envia a mensagem.
             # sleep(0.5)
 
-        if input_destino.handle_event(event):
+        if input_destino.handle_event(event):       # checa se houve uma entrada na InputBox de destinos de mensagem.
             nome_destino = input_destino.input
+            if nome_destino not in ContactList.keys():
+                ContactList[nome_destino] = []
+                ChatBlockList[nome_destino] = Button(buttonGroups, x=194/2, y=32+58/2+58*len(ChatBlockList),     # cria o botção que abre o chat
+                                                              ctt=nome_destino[:9])                          #  de determinada conversa.
+            CurrentChat = nome_destino
 
-    for contact in ContactList.keys():
+    for contact in ContactList.keys():              # checa se clicou em outro chat de conversa para carregar as mensagens.
         button = ChatBlockList[contact]
         if button.touch:
             nome_destino = contact
             CurrentChat = contact
-    if CurrentChat in ContactList.keys():
+    if CurrentChat in ContactList.keys():           # atualiza as mensagens no chat atual.
         texts, textsRect = CreateChatBlock(win, CurrentChat)
 
-# updates na janela
+# updates na janela, realiza todos os updates graficos necessarios para avisualização(funções: blit, draw e update).
     win.fill(ColorSet["white"])
     pygame.draw.rect(win, ColorSet["blue"], (0, 0, 196, 720))
     pygame.draw.rect(win, ColorSet["black"], (196, 0, 4, 720))

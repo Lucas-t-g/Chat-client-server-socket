@@ -8,6 +8,7 @@ COLOR_ACTIVE = pg.Color('dodgerblue2')
 FONT = pg.font.Font(None, 32)
 
 
+# A classe InputBox implementa caixas onde o usuário popde inserir texto na janela pygame
 class InputBox:
 
     def __init__(self, x, y, w, h, default_text='', color_active=None, color_inactive=None):
@@ -38,7 +39,7 @@ class InputBox:
             self.color = self.color_active if self.active else self.color_inactive
         if event.type == pg.KEYDOWN:
             if self.active:
-                if event.key == pg.K_RETURN:
+                if event.key == pg.K_RETURN and self.text != "":
                     # print(self.text)
                     self.input = self.text
                     self.text = self.default_text

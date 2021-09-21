@@ -3,6 +3,9 @@ from sys import exit, stdout
 
 APRESENTACAO = 'aps'
 MENSAGEM = 'msg'
+
+# A classe mensagem implementa uma estrutura que criei para armazenar os dados da mensagem,
+#   como: origem, destino e conteudo
 class Mensagem:
     def __init__(self, origem=None, destino=None, conteudo=None, apresentacao=False):
         self.origem = origem
@@ -14,19 +17,23 @@ class Mensagem:
             self.conteudo = conteudo
             self.tipo = MENSAGEM
     
-    def show(self, detalhes=False):
+    # A função show mostra em terminal o conteudo de um objeto da classe Mensagem
+    def show(self, detalhes=False): 
         if detalhes:
             print("{:<5}*{:>10}->{:<10}: {:<}".format(str(self.tipo), str(self.origem), str(self.destino), str(self.conteudo)))
         else:
             print("\n{}: {}".format(self.origem, self.conteudo))
             # stdout.writelines("\r{}: {}\n".format(self.origem, self.conteudo))
     
+    # __repr__ é uma nomenclatura padrão do python para representar um objeto em forma de string
     def __repr__(self):
         return "{:>10}->{:<10}: {:<}".format(str(self.origem), str(self.destino), str(self.conteudo))
 
+    # encode codifica o objeto Mensagem para uma string para serenviado via socket
     def encode(self, tipo = MENSAGEM):
         return str.encode("{}(#*#){}(#*#){}(#*#){}".format(self.tipo, self.origem, self.destino, self.conteudo))
         
+    # decodifica a string para um objeto Mensagem
     def decode(self, msg):
         msg = msg.decode().split("(#*#)")
         self.tipo = msg[0]
@@ -34,6 +41,8 @@ class Mensagem:
         self.destino = msg[2]
         self.conteudo = msg[3]
 
+# A classe Cliente é utilizadda apenas pelo programa do servidor,
+#   utiliza esta classe para armazenar os dados de conexão com cada cliente
 class Cliente:
     def __init__(self, conexao, endereco):
         self.conexao = conexao
@@ -44,24 +53,3 @@ class Cliente:
     
     def show(self):
         print("{}".format(self.nome))
-
-class Grupo:
-    def __init__(self, nome, membros):
-        self.nome = nome
-        self.membros = membros
-    
-    def att_membro(self, membro_0, membro_1):
-        self.membros[ self.membros.index(membro_1.nome) ] = membro_1
-    
-    def att_membros(self, clientes):
-        for cliente in clientes:
-            if cliente.nome in self.membros:
-                self.att_membro(cliente.nome, cliente)
-        
-        i = 0
-        while i < len(self.membros):
-            if type(self.membros[i]) != Cliente: self.membros.pop(i)
-            else: i += 1
-    
-    def show(self):
-        print("grupo - {}: {}".format(self.nome, [membro.nome for membro in self.membros if type(membro) == Cliente]))
